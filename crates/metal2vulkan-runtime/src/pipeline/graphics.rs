@@ -1045,7 +1045,13 @@ impl VariantObjects {
                 "a pipeline fetching in rasterization order outside a pass that does",
             ));
         }
-        let blend_flags = match key.pass.fetch_inputs {
+        let ordered = self
+            .device
+            .compile_device()
+            .profile()
+            .fragment()
+            .rasterization_order_color_access;
+        let blend_flags = match key.pass.fetch_inputs && ordered {
             true => {
                 vk::PipelineColorBlendStateCreateFlags::RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXT
             }

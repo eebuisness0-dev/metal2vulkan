@@ -103,6 +103,10 @@ pub(super) struct PendingDraw {
     /// The view mask of the storage barrier it records first
     /// (`render_target::between_storage_draws`), where it has one.
     pub(super) storage_barrier: Option<u32>,
+    /// The view mask of the barrier from its instance's earlier color writes it records first
+    /// (`render_target::between_draws`), where it fetches through unordered input attachments
+    /// (`DeviceProfile::unordered_fetch`).
+    pub(super) color_barrier: Option<u32>,
     /// The view mask and destination stages of the barrier from its instance's earlier
     /// indirect argument reads it records first (`render_target::after_indirect_reads`), where it
     /// has one.
@@ -199,6 +203,9 @@ impl PendingDraw {
         unsafe {
             if let Some(view_mask) = self.storage_barrier {
                 render_target::between_storage_draws(raw, cb, view_mask);
+            }
+            if let Some(view_mask) = self.color_barrier {
+                render_target::between_draws(raw, cb, view_mask);
             }
             if let Some((view_mask, stages)) = self.indirect_barrier {
                 render_target::after_indirect_reads(raw, cb, view_mask, stages);

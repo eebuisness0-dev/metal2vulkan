@@ -106,6 +106,19 @@ impl DeviceProfile {
         &self.fields.limits
     }
 
+    /// Whether the compile layer reads fetched color attachments as input attachments with no
+    /// ordering of the pixel's fragments: the policy allows it
+    /// ([`UnorderedFetchPolicy::InputAttachments`](crate::device::UnorderedFetchPolicy)) and the
+    /// device has neither rasterization-order color attachment access nor the pixel interlock.
+    /// Where it holds the fetch's input attachments carry no rasterization-order flag, and the
+    /// consumer records a barrier between the draws of a render pass instance.
+    pub fn unordered_fetch(&self) -> bool {
+        let f = &self.fields;
+        f.unordered_fetch == crate::device::UnorderedFetchPolicy::InputAttachments
+            && !f.fragment.rasterization_order_color_access
+            && !f.fragment.pixel_interlock
+    }
+
     /// The fragment-stage and fixed-function capabilities the profile enables.
     pub fn fragment(&self) -> &FragmentCaps {
         &self.fields.fragment
@@ -455,6 +468,8 @@ pub struct ProfileFields {
     pub isolation: GuestIsolation,
     /// How a fast-math `half` chain rounds without `shaderFloat16` (`DevicePolicy::half_chains`).
     pub half_chains: crate::device::HalfChainPolicy,
+    /// Whether a fetch no ordered form serves compiles (`DevicePolicy::unordered_fetch`).
+    pub unordered_fetch: crate::device::UnorderedFetchPolicy,
     pub leaf: LeafCaps,
     pub subgroup: SubgroupModel,
     pub images: ImageCaps,

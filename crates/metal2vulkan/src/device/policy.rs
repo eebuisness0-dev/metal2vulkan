@@ -55,6 +55,12 @@ pub struct DevicePolicy {
     /// without `shaderFloat16`, rounds where a value leaves it (the default) or at each operation.
     /// Changes emitted code: the profile carries it.
     pub half_chains: HalfChainPolicy,
+    /// Whether a fragment function's read of its color attachments compiles on a device with
+    /// neither ordered form of framebuffer fetch (no `rasterizationOrderColorAttachmentAccess` and
+    /// no `fragmentShaderPixelInterlock`): refused (the default), or read through unordered input
+    /// attachments ([`UnorderedFetchPolicy::InputAttachments`], recorded
+    /// `PrecisionNote::UnorderedFetch`). Changes emitted code: the profile carries it.
+    pub unordered_fetch: UnorderedFetchPolicy,
     /// Whether a render or compute state's creation, and a committed command buffer, wait a
     /// bound for a pipeline the driver is still making, the command buffer then dropping the
     /// draws and dispatches whose pipeline is not made (the default), or until it is made. The
@@ -94,6 +100,7 @@ impl DevicePolicy {
         render_lowering: RenderLoweringPolicy::AtCall,
         host_page_textures: HostPageTexturePolicy::InPlace,
         half_chains: HalfChainPolicy::AtExits,
+        unordered_fetch: UnorderedFetchPolicy::Refuse,
         pipeline_waits: PipelineWaitPolicy::Bounded,
         pipeline_creation_wait: Duration::from_millis(4500),
         pipeline_commit_wait: Duration::from_millis(4500),
@@ -292,6 +299,28 @@ pub enum HalfChainPolicy {
     AtExits,
     /// Every operation's result rounded to `half`, as the AIR computes it.
     EachOperation,
+}
+
+/// Whether framebuffer fetch compiles on a device with neither ordered form of it. Metal orders a
+/// fragment function's read of its color attachment after every earlier fragment of the pixel;
+/// Vulkan offers that order through rasterization-order attachment access or the fragment shader
+/// pixel interlock (`lower::fragment::fetch`). A device with either is unaffected by this choice.
+/// Capability emulation, not a speed choice: changes emitted code, the profile carries it.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum UnorderedFetchPolicy {
+    /// The pipeline is refused (`Unsupported{FramebufferFetch}`): an unordered read could see a
+    /// pixel before an earlier fragment's write (the default).
+    #[default]
+    Refuse,
+    /// The function reads each fetched color attachment as an input attachment of its subpass,
+    /// and the runtime records a barrier between draws of one pass instance. Overlapping
+    /// fragments of one draw, and of draws the barrier does not separate, are not ordered, so a
+    /// fetch may read a pixel before an earlier fragment of the same draw wrote it; the result
+    /// is Metal's where a draw's primitives do not overlap. Recorded
+    /// `PrecisionNote::UnorderedFetch`.
+    InputAttachments,
 }
 
 /// How long the runtime waits for a draw's `VkPipeline` the driver is still making. Metal makes a

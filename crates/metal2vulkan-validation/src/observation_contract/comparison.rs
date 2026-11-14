@@ -160,6 +160,8 @@ impl UlpTable {
 ///   level.
 /// - `UnmeasuredFetchBlend`: unbounded until Metal readings bound its blend arithmetic for the
 ///   format: the shader's `float` blend is not Metal's, whose arithmetic for it is not measured.
+/// - `UnorderedFetch`: unbounded: a fetch of a pixel an earlier fragment of the same draw covers
+///   may read it before that fragment's write, which differs from Metal's by any amount.
 /// - `Fp8Value`: unbounded until a Metal device that implements 8-bit float conversions reads
 ///   them: Metal on Apple M3 returns the carrier byte's integer extension, which differs from the
 ///   format's value by any amount.
@@ -282,6 +284,7 @@ pub fn allowance(note: PrecisionNote) -> Allowance {
         | N::NotMipmappedAnisotropicFilter
         | N::DeviceSampleLevel
         | N::UnmeasuredFetchBlend
+        | N::UnorderedFetch
         | N::Fp8Value
         | N::MultisamplePosition
         | N::RasterizationRateMap

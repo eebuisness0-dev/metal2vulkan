@@ -248,7 +248,10 @@ fn unsupported_features(profile: &DeviceProfile) -> Vec<Unsupported> {
         ));
     }
     // Ordered by rasterization-order access, or by the pixel interlock's storage form.
-    if !f.fragment.rasterization_order_color_access && !f.fragment.pixel_interlock {
+    if !f.fragment.rasterization_order_color_access
+        && !f.fragment.pixel_interlock
+        && !profile.unordered_fetch()
+    {
         out.push(Unsupported::needs_any_of(
             Feature::FramebufferFetch,
             vec![

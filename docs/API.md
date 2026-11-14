@@ -2834,6 +2834,12 @@ bound.
   mip filter or a runtime sampler's word does. The device takes the level of detail by Vulkan's
   rules, whose scale factor may be approximated; Metal's level of detail from derivatives is not
   measured. The sample may read another level or filter than Metal's near a boundary.
+- `metal2vulkan-degrade-unordered-fetch` (precision). `PrecisionNote::UnorderedFetch`: A fragment
+  function reads a color attachment on a device with neither ordered form of framebuffer fetch
+  (`DevicePolicy::unordered_fetch` set to `UnorderedFetchPolicy::InputAttachments`): it reads an
+  input attachment with no order of the pixel's fragments. A fetch of a pixel an earlier fragment
+  of the same draw covers may read it before that fragment's write, which Metal reads after;
+  consecutive draws of a pass instance are ordered by the runtime's barrier. Not bounded.
 - `metal2vulkan-degrade-unmeasured-fetch-blend` (precision). `PrecisionNote::UnmeasuredFetchBlend`:
   A fragment function reads a color attachment the pipeline blends, on a device that orders
   framebuffer fetch only through the pixel interlock (MoltenVK, RADV, ANV), of a format whose Metal

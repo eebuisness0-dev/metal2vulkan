@@ -68,6 +68,7 @@ pub use metal::{MetalDeviceProperties, SimdSupport, StageSimd};
 pub use policy::{
     BatchOrderPolicy, CompletionPolicy, ContainmentPolicy, DevicePolicy, HalfChainPolicy,
     HeapCompressionPolicy, HostPageTexturePolicy, PipelineWaitPolicy, RenderLoweringPolicy,
+    UnorderedFetchPolicy,
 };
 pub(crate) use profile::whole_point_size;
 pub use profile::{DeviceProfile, SpirvValidation};

@@ -107,10 +107,13 @@ use metal2vulkan::vk::{Format, ImageCreateFlags, ImageUsageFlags, NumericFormat}
 use std::collections::BTreeMap;
 
 /// Whether the compile layer reads `profile`'s fetched color attachments as input attachments
-/// in rasterization order (`lower::fragment::fetch`): where the device has
-/// `rasterizationOrderColorAttachmentAccess`.
+/// (`lower::fragment::fetch`): in rasterization order where the device has
+/// `rasterizationOrderColorAttachmentAccess`, and with no order of the pixel's fragments where
+/// it has neither ordered form and the policy reads it anyway
+/// ([`DeviceProfile::unordered_fetch`]), the runtime's barrier between the instance's draws the
+/// only order (`render.rs`'s `InterlockedStorage`).
 pub(crate) fn through_inputs(profile: &DeviceProfile) -> bool {
-    profile.fragment().rasterization_order_color_access
+    profile.fragment().rasterization_order_color_access || profile.unordered_fetch()
 }
 
 /// Whether the compile layer reads `profile`'s fetched color attachments as storage images in the

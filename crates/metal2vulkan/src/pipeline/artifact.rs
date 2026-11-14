@@ -1984,6 +1984,14 @@ pub enum PrecisionNote {
     /// fast math at four lanes; under fast math Metal regroups the blend, unmeasured.
     /// Validation derives no tolerance from it.
     UnmeasuredFetchBlend,
+    /// A fragment function reads a color attachment on a device with neither ordered form of
+    /// framebuffer fetch (`DevicePolicy::unordered_fetch` set to `InputAttachments`), through an
+    /// input attachment with no rasterization-order access. Metal reads the attachment after every
+    /// earlier fragment of the pixel; here a fragment may read a pixel before an earlier fragment
+    /// of the same draw has written it (the runtime orders consecutive draws by a barrier), so the
+    /// value differs from Metal's wherever a draw's primitives overlap. The bound is not known;
+    /// validation derives no tolerance from it.
+    UnorderedFetch,
 }
 
 /// The math mode of an entry's module, which decides, on a device whose `float` functions are

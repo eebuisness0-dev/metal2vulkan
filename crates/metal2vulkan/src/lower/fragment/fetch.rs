@@ -341,6 +341,12 @@ pub(crate) fn inputs_order(p: &DeviceProfile) -> bool {
     p.fields().fragment.rasterization_order_color_access
 }
 
+/// Whether `p` reads framebuffer fetch through input attachments in no order: neither ordered form
+/// exists and the policy allows the read (`DeviceProfile::unordered_fetch`).
+pub(crate) fn inputs_unordered(p: &DeviceProfile) -> bool {
+    p.unordered_fetch()
+}
+
 /// Whether `pf` is a 16-bit float color format, whose blend of a `half` output of a module
 /// without fast math Metal computes in `half` arithmetic, and of one with fast math in the fast
 /// forms it folds into the function ([`extended_range::blend::BlendMath`]).

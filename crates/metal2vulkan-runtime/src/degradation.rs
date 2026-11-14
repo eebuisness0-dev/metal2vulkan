@@ -2362,6 +2362,12 @@ degradations! {
         /// module compiled with fast math, or written by fewer than four lanes, in the 8-bit unorm
         /// blend's rounded forms over the decoded texel. Metal's blend for these is not measured.
         UnmeasuredFetchBlend = "unmeasured-fetch-blend";
+        /// A color attachment the fragment function reads, on a device with neither ordered form
+        /// of framebuffer fetch (`DevicePolicy::unordered_fetch` set to `InputAttachments`), read
+        /// as an input attachment with no ordering of the pixel's fragments: a fetch may read a
+        /// pixel before an earlier fragment of the same draw wrote it, where Metal reads after it.
+        /// Consecutive draws are ordered by a barrier. Not bounded.
+        UnorderedFetch = "unordered-fetch";
     }
 }
 
