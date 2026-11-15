@@ -231,6 +231,7 @@ surface! {
         enum HostPageTexturePolicy N;
         enum HalfChainPolicy N;
         enum PipelineWaitPolicy N;
+        enum UnorderedFetchPolicy N;
         struct DeviceProfile O;
         struct SpirvValidation N;
         struct EnabledCaps N;

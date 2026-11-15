@@ -1398,6 +1398,7 @@ enum	metal2vulkan::device::SpirvExtension	#[derive(Clone, Copy, Debug, PartialEq
 enum	metal2vulkan::device::StageCreateFlag	#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] #[non_exhaustive] pub enum StageCreateFlag
 enum	metal2vulkan::device::SubgroupOp	#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] #[non_exhaustive] pub enum SubgroupOp
 enum	metal2vulkan::device::Tier	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)] #[non_exhaustive] pub enum Tier
+enum	metal2vulkan::device::UnorderedFetchPolicy	#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)] #[non_exhaustive] pub enum UnorderedFetchPolicy
 enum	metal2vulkan::device::VkExtension	#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] #[non_exhaustive] pub enum VkExtension
 enum	metal2vulkan::device::VkFeature	#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))] #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] #[non_exhaustive] pub enum VkFeature
 enum	metal2vulkan::device::VkLimit	#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] #[non_exhaustive] pub enum VkLimit
@@ -3674,6 +3675,7 @@ field	metal2vulkan::device::DevicePolicy.pipeline_creation_wait	pub pipeline_cre
 field	metal2vulkan::device::DevicePolicy.pipeline_waits	pub pipeline_waits: PipelineWaitPolicy
 field	metal2vulkan::device::DevicePolicy.pointer_domain	pub pointer_domain: PointerDomain
 field	metal2vulkan::device::DevicePolicy.render_lowering	pub render_lowering: RenderLoweringPolicy
+field	metal2vulkan::device::DevicePolicy.unordered_fetch	pub unordered_fetch: UnorderedFetchPolicy
 field	metal2vulkan::device::DriverDiagnostic.id	pub id: i32
 field	metal2vulkan::device::DriverDiagnostic.id_name	pub id_name: &'static str
 field	metal2vulkan::device::DriverDiagnostic.text	pub text: Cow<'static, str>
@@ -5097,6 +5099,7 @@ macro-member	metal2vulkan-runtime::Degradation::UnnamedShadowedTexture	UnnamedSh
 macro-member	metal2vulkan-runtime::Degradation::UnnamedTextureUnviewable	UnnamedTextureUnviewable = "unnamed-texture-unviewable", Precision,
 macro-member	metal2vulkan-runtime::Degradation::UnnamedTexturesPastCapacity	UnnamedTexturesPastCapacity = "unnamed-textures-past-capacity", Precision,
 macro-member	metal2vulkan-runtime::Degradation::UnorderedDrawBytes	UnorderedDrawBytes = "unordered-draw-bytes", Performance,
+macro-member	metal2vulkan-runtime::Degradation::UnorderedFetch	UnorderedFetch = "unordered-fetch";
 macro-member	metal2vulkan-runtime::Degradation::UnormDepthBias	UnormDepthBias = "unorm-depth-bias", Precision,
 macro-member	metal2vulkan-runtime::Degradation::UnormDepthRounding	UnormDepthRounding = "unorm-depth-rounding", Precision,
 macro-member	metal2vulkan-runtime::Degradation::UnpackedFillColor	UnpackedFillColor = "unpacked-fill-color", Precision,
@@ -8730,6 +8733,7 @@ method	metal2vulkan::device::DeviceProfile::supports_format	pub fn supports_form
 method	metal2vulkan::device::DeviceProfile::takes_driver_deviation	pub fn takes_driver_deviation(&self, deviation: DriverDeviation) -> bool
 method	metal2vulkan::device::DeviceProfile::ulong_atomic_gaps	pub fn ulong_atomic_gaps(&self, buffer: bool) -> Vec<Capability>
 method	metal2vulkan::device::DeviceProfile::union_requirements	pub fn union_requirements(&self, a: &Requirements, b: &Requirements) -> Requirements
+method	metal2vulkan::device::DeviceProfile::unordered_fetch	pub fn unordered_fetch(&self) -> bool
 method	metal2vulkan::device::DeviceProfile::vertex_entry_inputs	pub fn vertex_entry_inputs(&self, d: &EntryDescriptor<'_>, vertex: Option<&VertexDescriptor>, budget: &Budget) -> Result<LoweringInputs, Error>
 method	metal2vulkan::device::DeviceProfile::workarounds	pub fn workarounds(&self) -> &[DriverWorkaround]
 method	metal2vulkan::device::DriverFact::pipeline_creation_diagnostics	pub fn pipeline_creation_diagnostics(self, dynamic_states: &[DynamicState], topology: PrimitiveTopology, blendless_colors: &[Format]) -> Vec<DriverDiagnostic>
@@ -12491,6 +12495,8 @@ variant	metal2vulkan::device::Tier::Emulated	Emulated
 variant	metal2vulkan::device::Tier::Linear	Linear
 variant	metal2vulkan::device::Tier::NoSubgroup	NoSubgroup
 variant	metal2vulkan::device::Tier::PartialFragment	PartialFragment
+variant	metal2vulkan::device::UnorderedFetchPolicy::InputAttachments	InputAttachments
+variant	metal2vulkan::device::UnorderedFetchPolicy::Refuse	Refuse
 variant	metal2vulkan::device::VkExtension::Ext4444Formats	Ext4444Formats
 variant	metal2vulkan::device::VkExtension::ExtAttachmentFeedbackLoopLayout	ExtAttachmentFeedbackLoopLayout
 variant	metal2vulkan::device::VkExtension::ExtBorderColorSwizzle	ExtBorderColorSwizzle
@@ -13517,6 +13523,7 @@ variant	metal2vulkan::pipeline::PrecisionNote::TessellationTriangleOrder	Tessell
 variant	metal2vulkan::pipeline::PrecisionNote::TessellationWinding	TessellationWinding
 variant	metal2vulkan::pipeline::PrecisionNote::UnmeasuredFetchBlend	UnmeasuredFetchBlend
 variant	metal2vulkan::pipeline::PrecisionNote::UnmeasuredGroupSpeculation	UnmeasuredGroupSpeculation
+variant	metal2vulkan::pipeline::PrecisionNote::UnorderedFetch	UnorderedFetch
 variant	metal2vulkan::pipeline::PrecisionNote::VertexSimdgroupGrouping	VertexSimdgroupGrouping
 variant	metal2vulkan::pipeline::PrecisionNote::ViewBaseTexelOffset	ViewBaseTexelOffset
 variant	metal2vulkan::pipeline::PushField::AlphaTestReference	AlphaTestReference
