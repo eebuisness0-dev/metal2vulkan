@@ -305,6 +305,12 @@ pub(crate) fn inputs_order(p: &DeviceProfile) -> bool {
     p.fields().fragment.rasterization_order_color_access
 }
 
+/// Whether `p` reads framebuffer fetch through input attachments in no order: neither ordered form
+/// exists and the policy allows the read (`DeviceProfile::unordered_fetch`).
+pub(crate) fn inputs_unordered(p: &DeviceProfile) -> bool {
+    p.unordered_fetch()
+}
+
 /// Whether `p` asks for Metal's 16-bit float blend of a `half4` output, computed by the function
 /// in the storage form (`DevicePolicy::half_blend`), which a device that orders fetch through
 /// the pixel interlock alone ([`interlock_orders`]) takes.

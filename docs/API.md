@@ -2567,6 +2567,12 @@ fast forms record, and each `PrecisionNote`'s rustdoc states its bound.
   to the codes as a kernel's write does. No probe has read these cells through a tile function on
   a Mac, so a read may differ from Metal's by the `half` Metal's cell holds for a code of 1023, and
   a stored pixel may keep another code. Validation derives no tolerance for it.
+- `metal2vulkan-degrade-unordered-fetch` (precision). `PrecisionNote::UnorderedFetch`: A fragment
+  function reads a color attachment on a device with neither ordered form of framebuffer fetch
+  (`DevicePolicy::unordered_fetch` set to `UnorderedFetchPolicy::InputAttachments`): it reads an
+  input attachment with no order of the pixel's fragments. A fetch of a pixel an earlier fragment
+  of the same draw covers may read it before that fragment's write, which Metal reads after;
+  consecutive draws of a pass instance are ordered by the runtime's barrier. Not bounded.
 
 - `metal2vulkan-degrade-depth-twin-comparison` (retired). Replaced by
   metal2vulkan-degrade-device-depth-comparison and, on a device without

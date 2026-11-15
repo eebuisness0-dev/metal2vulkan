@@ -203,7 +203,12 @@ pub(super) fn select_param(cx: &mut SelectCx<'_>, b: &ParamBinding) -> Result<Co
     // On a device with the pixel interlock `fetch::plan` refused a blocked attachment already;
     // here neither ordered form exists.
     if !frag.rasterization_order_color_access {
-        return Err(unordered(cx, color));
+        // The policy that reads it anyway (`DevicePolicy::unordered_fetch`): an input attachment
+        // with no rasterization-order access, noted.
+        if !super::fetch::inputs_unordered(cx.profile) {
+            return Err(unordered(cx, color));
+        }
+        cx.precision.insert(PrecisionNote::UnorderedFetch);
     }
     // Two reads of one attachment must agree on its numeric class (one image declaration).
     let known = &cx.families.fragment.colors;

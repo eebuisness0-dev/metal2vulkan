@@ -733,6 +733,10 @@ struct InterlockedStorage {
     /// The depth's stand-in, which a draw that tests the depth in the shader reads and may write
     /// (`depth_stand_in.rs`).
     depth: bool,
+    /// Colors read as input attachments in no order (`DeviceProfile::unordered_fetch`): a draw
+    /// that fetches reaches them, and every draw writes them. Its barrier is the draws' subpass's
+    /// own (`render_target::between_draws`), not the storage barrier.
+    inputs: bool,
 }
 
 impl InterlockedStorage {
@@ -740,6 +744,7 @@ impl InterlockedStorage {
         imageblock: false,
         colors: false,
         depth: false,
+        inputs: false,
     };
 
     /// Every kind: what an execution of render commands, or the encoder's draws before it, may
@@ -748,6 +753,7 @@ impl InterlockedStorage {
         imageblock: true,
         colors: true,
         depth: true,
+        inputs: true,
     };
 
     /// What a draw of `graphics` whose colors in the interlocked storage form are `storage`
@@ -759,6 +765,7 @@ impl InterlockedStorage {
         graphics: &GraphicsState,
         storage: &[StorageAttachmentUse],
         colors_ordered: bool,
+        unordered_inputs: bool,
     ) -> (Self, Self) {
         let imageblock = graphics.fragment_imageblock.is_some();
         let depth = graphics.shader_tests.is_some();
@@ -766,20 +773,28 @@ impl InterlockedStorage {
             imageblock,
             colors: !colors_ordered && !storage.is_empty(),
             depth,
+            inputs: unordered_inputs && !graphics.input_attachments.is_empty(),
         };
         let writes = Self {
             imageblock,
             colors: !colors_ordered && storage.iter().any(|s| s.writes),
             depth,
+            inputs: unordered_inputs,
         };
         (reaches, writes)
     }
 
-    /// Whether a kind is in both.
+    /// Whether a storage kind (not the unordered inputs, [`InterlockedStorage::meets_inputs`]) is
+    /// in both.
     fn meets(self, other: Self) -> bool {
         (self.imageblock && other.imageblock)
             || (self.colors && other.colors)
             || (self.depth && other.depth)
+    }
+
+    /// Whether the unordered inputs kind is in both.
+    fn meets_inputs(self, other: Self) -> bool {
+        self.inputs && other.inputs
     }
 
     /// The kinds of either.
@@ -788,6 +803,7 @@ impl InterlockedStorage {
             imageblock: self.imageblock || other.imageblock,
             colors: self.colors || other.colors,
             depth: self.depth || other.depth,
+            inputs: self.inputs || other.inputs,
         }
     }
 }
@@ -7579,8 +7595,12 @@ impl RenderCommandEncoder {
         let storage = self.storage_attachments(graphics)?;
         let colors_ordered =
             (device.properties().driver_facts).contains(&DriverFact::InterlockOrdersDraws);
-        let (interlocked, interlocked_writes) =
-            InterlockedStorage::of(graphics, &storage, colors_ordered);
+        let (interlocked, interlocked_writes) = InterlockedStorage::of(
+            graphics,
+            &storage,
+            colors_ordered,
+            device.compile_device().profile().unordered_fetch(),
+        );
         let failing = match &failing_state {
             None => None,
             Some(state) => {
@@ -8855,26 +8875,43 @@ impl RenderCommandEncoder {
             // A draw that reaches interlocked storage an earlier draw of the instance wrote, the
             // imageblock's, a color's or the depth's stand-in, records after the barrier
             // (`InterlockedStorage`).
-            let after_writes = interlocked.meets(self.current.interlocked_writes);
+            let after_storage_writes = interlocked.meets(self.current.interlocked_writes);
+            // A draw that fetches through unordered input attachments records after the draws'
+            // subpass's barrier from the color writes before it
+            // (`render_target::between_draws`), whose scopes hold the storage barrier's.
+            let after_color_writes = interlocked.meets_inputs(self.current.interlocked_writes);
+            let after_writes = after_storage_writes || after_color_writes;
             let mut storage_barrier = None;
+            let mut color_barrier = None;
             if after_writes {
                 let view_mask = self.current.shape.view_mask;
                 match (pending.is_some(), &mut self.current.kept) {
-                    (true, _) => storage_barrier = Some(view_mask),
+                    (true, _) => match after_color_writes {
+                        true => color_barrier = Some(view_mask),
+                        false => storage_barrier = Some(view_mask),
+                    },
                     // An instance recorded inline after a split keeps it with its draws
                     // (`render/inline_splits.rs`).
-                    (false, Some(kept)) => {
-                        kept.storage_barrier(view_mask);
-                    }
+                    (false, Some(kept)) => match after_color_writes {
+                        true => kept.barrier(view_mask),
+                        false => kept.storage_barrier(view_mask),
+                    },
                     // SAFETY: the secondary command buffer (or the pass's, inline) is recording
                     // inside the compatible pass, which `render_target` made, and only this
                     // encoder records it.
                     (false, None) => unsafe {
-                        render_target::between_storage_draws(
-                            device.shared().vk(),
-                            self.current.draws,
-                            view_mask,
-                        )
+                        match after_color_writes {
+                            true => render_target::between_draws(
+                                device.shared().vk(),
+                                self.current.draws,
+                                view_mask,
+                            ),
+                            false => render_target::between_storage_draws(
+                                device.shared().vk(),
+                                self.current.draws,
+                                view_mask,
+                            ),
+                        }
                     },
                 }
             }
@@ -9095,6 +9132,7 @@ impl RenderCommandEncoder {
                     specialization: variant.constants(specialization),
                     input_barrier,
                     storage_barrier,
+                    color_barrier,
                     indirect_barrier,
                     geometry_barrier,
                     query,

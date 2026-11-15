@@ -2050,6 +2050,12 @@ degradations! {
         /// measured through fetch) and a store encodes them to the codes as a kernel's write does;
         /// no probe has read these cells through a tile function on a Mac.
         UnmeasuredTileExtendedRange = "unmeasured-tile-extended-range";
+        /// A color attachment the fragment function reads, on a device with neither ordered form
+        /// of framebuffer fetch (`DevicePolicy::unordered_fetch` set to `InputAttachments`), read
+        /// as an input attachment with no ordering of the pixel's fragments: a fetch may read a
+        /// pixel before an earlier fragment of the same draw wrote it, where Metal reads after it.
+        /// Consecutive draws are ordered by a barrier. Not bounded.
+        UnorderedFetch = "unordered-fetch";
     }
 }
 

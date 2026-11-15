@@ -79,6 +79,9 @@ fn choices() -> Vec<Choice> {
         tile_store: _,
         resolve: _,
         batch_order: _,
+        // Capability, not a speed choice: whether a fetch no ordered form serves compiles
+        // (`PrecisionNote::UnorderedFetch`, a device gap below).
+        unordered_fetch: _,
     } = p;
     vec![
         choice!(p.unorm8_linear_filter: Unorm8LinearFilterPolicy { Exact, DeviceWithinOneCode }),
@@ -151,6 +154,7 @@ fn notes() -> Vec<(&'static str, Ledger)> {
         ],
         OptIn: [DeviceUnorm8LinearFilter],
         DeviceGap: [
+            UnorderedFetch,
             DeviceDenormals,
             DeviceTexelDenormals,
             RestrictedDepthRange,
@@ -390,6 +394,39 @@ fn the_ledger_readers_read_names_and_switches() {
     assert_eq!(
         assignments(text),
         BTreeSet::from([("sampling".to_owned(), "SamplingPolicy::Exact".to_owned())])
+    );
+}
+
+/// `unordered_fetch` is on only where the policy allows the read and the device has neither
+/// ordered form of framebuffer fetch: by default no committed profile reads unordered, and under
+/// `InputAttachments` exactly the profiles with neither rasterization-order access nor the pixel
+/// interlock do.
+#[test]
+fn unordered_fetch_is_on_only_where_neither_ordered_form_exists_and_the_policy_allows_it() {
+    use crate::device::UnorderedFetchPolicy;
+    use crate::spirv::testing::committed_profiles_with;
+    let refused = committed_profiles_with(DevicePolicy::UNTRUSTED).expect("profiles");
+    let allowed = committed_profiles_with(DevicePolicy {
+        unordered_fetch: UnorderedFetchPolicy::InputAttachments,
+        ..DevicePolicy::UNTRUSTED
+    })
+    .expect("profiles");
+    assert_eq!(refused.len(), allowed.len());
+    let mut unordered = 0;
+    for ((stem, r), (other, a)) in refused.iter().zip(&allowed) {
+        assert_eq!(stem, other);
+        assert!(!r.unordered_fetch(), "{stem} reads unordered by default");
+        let f = a.fragment();
+        let neither = !f.rasterization_order_color_access && !f.pixel_interlock;
+        assert_eq!(a.unordered_fetch(), neither, "{stem}");
+        unordered += usize::from(neither);
+        // The policy is a field of the profile, so every profile's fingerprint follows it.
+        assert_ne!(r.fingerprint(), a.fingerprint(), "{stem}");
+    }
+    // The committed floor profile (vk12-floor) has neither form, so the path is exercised.
+    assert!(
+        unordered > 0,
+        "no committed profile exercises the unordered form"
     );
 }
 

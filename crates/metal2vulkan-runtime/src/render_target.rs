@@ -1768,9 +1768,19 @@ fn make_pass(
     }
     let mut draws = graphics().color_attachments(&references);
     if shape.fetch_inputs {
-        draws = draws
-            .input_attachments(&inputs)
-            .flags(vk::SubpassDescriptionFlags::RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_EXT);
+        draws = draws.input_attachments(&inputs);
+        // The access flag is the device's feature; a device without it reads the inputs in no
+        // order (`DeviceProfile::unordered_fetch`).
+        if device
+            .compile_device()
+            .profile()
+            .fragment()
+            .rasterization_order_color_access
+        {
+            draws = draws.flags(
+                vk::SubpassDescriptionFlags::RASTERIZATION_ORDER_ATTACHMENT_COLOR_ACCESS_EXT,
+            );
+        }
     }
     if resolve_references
         .iter()

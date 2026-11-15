@@ -75,6 +75,19 @@ impl DeviceProfile {
         &self.fields.limits
     }
 
+    /// Whether the compile layer reads fetched color attachments as input attachments with no
+    /// ordering of the pixel's fragments: the policy allows it
+    /// ([`UnorderedFetchPolicy::InputAttachments`](crate::device::UnorderedFetchPolicy)) and the
+    /// device has neither rasterization-order color attachment access nor the pixel interlock.
+    /// Where it holds the fetch's input attachments carry no rasterization-order flag, and the
+    /// consumer records a barrier between the draws of a render pass instance.
+    pub fn unordered_fetch(&self) -> bool {
+        let f = &self.fields;
+        f.unordered_fetch == crate::device::UnorderedFetchPolicy::InputAttachments
+            && !f.fragment.rasterization_order_color_access
+            && !f.fragment.pixel_interlock
+    }
+
     /// The fragment-stage and fixed-function capabilities the profile enables.
     pub fn fragment(&self) -> &FragmentCaps {
         &self.fields.fragment
@@ -438,6 +451,8 @@ pub struct ProfileFields {
     pub handle_domain: HandleDomain,
     pub containment: Containment,
     pub isolation: GuestIsolation,
+    /// Whether a fetch no ordered form serves compiles (`DevicePolicy::unordered_fetch`).
+    pub unordered_fetch: crate::device::UnorderedFetchPolicy,
     /// Whether a texel's value is the device's conversion or Metal's (the policy's).
     pub texel_conversion: crate::device::policy::TexelConversionPolicy,
     /// Whether a `half4` output of a module without fast math blends into a 16-bit float

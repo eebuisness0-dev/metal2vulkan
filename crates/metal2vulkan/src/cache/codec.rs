@@ -1398,6 +1398,7 @@ codec_enum! {
         DeviceSampleLevel,
         UnmeasuredCodeFormatFetch,
         UnmeasuredTileExtendedRange,
+        UnorderedFetch,
     }
     BindingSource {
         Buffer(f0), Texture(f0), Sampler(f0), CombinedTextureSampler { texture, sampler },

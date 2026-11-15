@@ -235,6 +235,7 @@ surface! {
         enum TileStorePolicy N;
         enum ResolvePolicy N;
         enum BatchOrderPolicy N;
+        enum UnorderedFetchPolicy N;
         struct DeviceProfile O;
         struct SpirvValidation N;
         struct EnabledCaps N;

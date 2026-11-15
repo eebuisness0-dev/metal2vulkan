@@ -89,6 +89,12 @@ pub struct DevicePolicy {
     /// one queue side by side), or by a barrier for each access that depends on theirs. The
     /// runtime's choice alone: no emitted code changes.
     pub batch_order: BatchOrderPolicy,
+    /// Whether a fragment function's read of its color attachments compiles on a device with
+    /// neither ordered form of framebuffer fetch (no `rasterizationOrderColorAttachmentAccess` and
+    /// no `fragmentShaderPixelInterlock`): refused (the default), or read through unordered input
+    /// attachments ([`UnorderedFetchPolicy::InputAttachments`], recorded
+    /// `PrecisionNote::UnorderedFetch`). Changes emitted code: the profile carries it.
+    pub unordered_fetch: UnorderedFetchPolicy,
 }
 
 impl DevicePolicy {
@@ -122,6 +128,7 @@ impl DevicePolicy {
         tile_store: TileStorePolicy::Device,
         resolve: ResolvePolicy::Device,
         batch_order: BatchOrderPolicy::Ends,
+        unordered_fetch: UnorderedFetchPolicy::Refuse,
     };
 
     /// This policy with Metal's answer wherever the choices offer it: its maths functions,
@@ -156,6 +163,28 @@ impl DevicePolicy {
             ..self
         }
     }
+}
+
+/// Whether framebuffer fetch compiles on a device with neither ordered form of it. Metal orders a
+/// fragment function's read of its color attachment after every earlier fragment of the pixel;
+/// Vulkan offers that order through rasterization-order attachment access or the fragment shader
+/// pixel interlock (`lower::fragment::fetch`). A device with either is unaffected by this choice.
+/// Capability emulation, not a speed choice: changes emitted code, the profile carries it.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum UnorderedFetchPolicy {
+    /// The pipeline is refused (`Unsupported{FramebufferFetch}`): an unordered read could see a
+    /// pixel before an earlier fragment's write (the default).
+    #[default]
+    Refuse,
+    /// The function reads each fetched color attachment as an input attachment of its subpass,
+    /// and the runtime records a barrier between draws of one pass instance. Overlapping
+    /// fragments of one draw, and of draws the barrier does not separate, are not ordered, so a
+    /// fetch may read a pixel before an earlier fragment of the same draw wrote it; the result
+    /// is Metal's where a draw's primitives do not overlap. Recorded
+    /// `PrecisionNote::UnorderedFetch`.
+    InputAttachments,
 }
 
 impl Default for DevicePolicy {
