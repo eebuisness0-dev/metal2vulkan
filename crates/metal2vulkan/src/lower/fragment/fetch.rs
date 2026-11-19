@@ -299,10 +299,14 @@ pub(crate) fn interlock_orders(p: &DeviceProfile) -> bool {
     !f.rasterization_order_color_access && f.pixel_interlock
 }
 
-/// Whether `p` orders framebuffer fetch through rasterization-order input attachments (lavapipe):
-/// rasterization-order color attachment access, which [`interlock_orders`] excludes.
+/// Whether `p` fetches the framebuffer through input attachments: in rasterization order
+/// (lavapipe), where rasterization-order color attachment access, which [`interlock_orders`]
+/// excludes, orders the reads, or in no order (`DeviceProfile::unordered_fetch`, the policy's
+/// opt-in on a device with neither ordered form), where the runtime's barriers between draws are
+/// the order. The planned reads, blends and merges over input attachments (extended-range blends,
+/// word merges) are built in both.
 pub(crate) fn inputs_order(p: &DeviceProfile) -> bool {
-    p.fields().fragment.rasterization_order_color_access
+    p.fields().fragment.rasterization_order_color_access || p.unordered_fetch()
 }
 
 /// Whether `p` reads framebuffer fetch through input attachments in no order: neither ordered form
